@@ -76,21 +76,25 @@ instance Default Metadata where
     , metadataRevision = Nothing
     }
 
-instance Monoid Metadata where
-  mempty = Metadata mempty Nothing Nothing Nothing
-  a `mappend` b =
+instance Semigroup Metadata where
+  a <> b =
     Metadata { metadataTitle    = metadataTitle a <> metadataTitle b
              , metadataAuthor   = metadataAuthor a <> metadataAuthor b
              , metadataEmail    = metadataEmail a <> metadataEmail b
              , metadataRevision = metadataRevision a <> metadataRevision b
              }
 
+instance Monoid Metadata where
+  mempty = Metadata mempty Nothing Nothing Nothing
+
 -- | Element attributes
 newtype Attributes = Attributes { fromAttributes :: [Attr] }
   deriving (Show, Eq, Ord)
 
+instance Semigroup Attributes where
+  (Attributes a) <> (Attributes b) = Attributes (a <> b)
+
 instance Monoid Attributes where
-  (Attributes a) `mappend` (Attributes b) = Attributes (a <> b)
   mempty = nullAttributes
 
 data Attr = Attr
@@ -142,9 +146,11 @@ instance IsList Inlines where
   fromList = Inlines . Seq.fromList
   toList   = Foldable.toList . fromInlines
 
+instance Semigroup Inlines where
+  (Inlines a) <> (Inlines b) = Inlines (a <> b)
+
 instance Monoid Inlines where
   mempty = Inlines mempty
-  (Inlines a) `mappend` (Inlines b) = Inlines (a <> b)
 
 -- | Block types
 data Block =

@@ -14,6 +14,7 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 -}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      :  Text.Huskydoc.Blocks
 Copyright   :  © 2016 Albert Krewinkel
@@ -46,7 +47,7 @@ import Control.Monad ( guard, mzero, void, when )
 import Data.List ( findIndex )
 import Data.Maybe ( fromMaybe )
 import Data.Monoid ( (<>) )
-import Data.Text ( pack )
+import Data.Text ( Text, pack )
 import GHC.Exts ( IsList(..) )
 import Text.Huskydoc.Attributes ( RawAttributes
                                 , blockRawAttributes , fromRawAttributes )
@@ -54,6 +55,7 @@ import Text.Huskydoc.Inlines ( inlines, inlinesWithinLine )
 import Text.Huskydoc.Parsing
 import Text.Huskydoc.Patterns
 import Text.Huskydoc.Table ( table )
+import Text.Megaparsec.Char hiding ( spaceChar )
 
 blocks :: Parser Blocks
 blocks = fromList <$> some blockElement
@@ -86,7 +88,7 @@ horizontalRule :: Parser (Attributes -> BlockElement)
 horizontalRule = label "horizontal rule" $
   RichHorizontalRule <$ try (choice ruleParsers <* blankline)
   where
-    ruleParsers :: [Parser String]
+    ruleParsers :: [Parser Text]
     ruleParsers = [ string "---" , string "- - -"
                   , string "***" , string "* * *"]
 
@@ -142,7 +144,7 @@ listItem marker = label ("list item with marker '" <> marker <> "'") . try $
   -- marker is empty, causing the next someSpaces to fail.
   skipMany blankline
   *> when (marker /= "") skipSpaces
-  *> string marker
+  *> string (pack marker)
   *> someSpaces
   *> (ListItem <$> listItemBlocks)
 
@@ -220,14 +222,14 @@ titleUnderlineChars = "=-~^"
 
 source :: Parser (Attributes -> BlockElement)
 source = label "source block" . try $ do
-  delim <- (++) <$> string "----" <*> many (char '-')
+  delim <- (<>) <$> string "----" <*> (pack <$> many (char '-'))
   skipSpaces <* void eol
   sourceLines <- manyTill sourceBlockLine (string delim *> skipSpaces *> void eol)
   return $ flip RichSource sourceLines
 
 sourceBlockLine :: Parser SourceLine
 sourceBlockLine = label "source line" . try $ do
-  SourceLine . pack <$> manyTill anyChar eol
+  SourceLine . pack <$> manyTill anySingle eol
 
 -- | A simple paragraph
 paragraph :: Parser (Attributes -> BlockElement)

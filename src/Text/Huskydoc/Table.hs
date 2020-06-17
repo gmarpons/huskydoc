@@ -14,6 +14,7 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 -}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      :  Text.Huskydoc.Table
 Copyright   :  © 2016 Albert Krewinkel
@@ -32,9 +33,11 @@ module Text.Huskydoc.Table
   , tableBoundary
   ) where
 
+import Data.Text
 import Text.Huskydoc.Inlines ( inlinesWithinLine )
 import Text.Huskydoc.Parsing
 import Text.Huskydoc.Patterns
+import Text.Megaparsec.Char hiding ( spaceChar )
 
 -- | Parse a table
 table :: Parser (Attributes -> BlockElement)
@@ -45,7 +48,7 @@ table = try $ do
   return (\a -> RichTable a (Just firstRow) bodyRows Nothing)
 
 -- | Parse a default table boundary
-tableBoundary :: Parser String
+tableBoundary :: Parser Text
 tableBoundary = try $
   string "|===" <* optional (many (char '=')) <* skipSpaces <* eol
 

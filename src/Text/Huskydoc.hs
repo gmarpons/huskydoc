@@ -31,10 +31,11 @@ module Text.Huskydoc
 
 import Data.Bifunctor ( second )
 import Data.Text ( Text )
+import Data.Void
 import Text.Huskydoc.Document ( readAsciidoc )
 import Text.Huskydoc.Pandoc ( convertDocument )
-import Text.Huskydoc.Parsing ( HuskydocError )
+import Text.Megaparsec ( ParseErrorBundle )
 import Text.Pandoc.Definition ( Pandoc )
 
-parseToPandoc :: Text -> Either HuskydocError Pandoc
+parseToPandoc :: Text -> Either (ParseErrorBundle Text Void) Pandoc
 parseToPandoc = second convertDocument . readAsciidoc

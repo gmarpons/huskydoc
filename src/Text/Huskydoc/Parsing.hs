@@ -13,7 +13,6 @@ OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 -}
-{-# LANGUAGE CPP #-}
 {-|
 Module      :  Text.Huskydoc.Parsing
 Copyright   :  © 2016 Albert Krewinkel
@@ -54,17 +53,14 @@ import Control.Monad ( void )
 import Control.Monad.Trans.Class (lift)
 import Data.Default ( Default(..) )
 import Data.Text ( Text )
+import Data.Void
 import Text.Huskydoc.Types ( Metadata(..) )
-import Text.Megaparsec hiding ( spaceChar )
+import Text.Megaparsec
+import Text.Megaparsec.Char ( eol )
 import qualified Control.Monad.Trans.State as TransState
 
-#if MIN_VERSION_megaparsec(5,0,0)
-type Parser = ParsecT Dec Text (TransState.State ParserState)
-type HuskydocError = ParseError (Token Text) Dec
-#else
-type Parser = ParsecT Text (TransState.State ParserState)
-type HuskydocError = ParseError
-#endif
+type Parser = ParsecT Void Text (TransState.State ParserState)
+type HuskydocError = ParseError Text Void
 
 -- | Parser state
 data ParserState = ParserState
@@ -112,7 +108,7 @@ getMetadata = lift $ stateMetadata <$> TransState.get
 
 -- | Helper function to test parsers.  This sets the source name to the empty
 --   string and uses the default parser state.
-parseDef :: Parser a -> Text -> Either HuskydocError a
+parseDef :: Parser a -> Text -> Either (ParseErrorBundle Text Void) a
 parseDef p txt = flip TransState.evalState def $  runParserT p "" txt
 
 modifyLocalState :: (ParserState -> ParserState) -> Parser ()
@@ -120,29 +116,29 @@ modifyLocalState = lift . TransState.modify
 
 -- | Set end position of last string to current position.
 markEndOfStr :: Parser ()
-markEndOfStr = modifyLocalState . setLastStrPos =<< getPosition
+markEndOfStr = modifyLocalState . setLastStrPos =<< getSourcePos
   where setLastStrPos pos st = st { stateLastStrPos = Just pos }
 
 markEndOfDelimitedElement :: Parser ()
 markEndOfDelimitedElement =
-  modifyLocalState . setLastDelimitedElement =<< getPosition
+  modifyLocalState . setLastDelimitedElement =<< getSourcePos
   where setLastDelimitedElement pos st =
             st { stateLastDelimitedElementPos = Just pos }
 
 -- | Check whether the parser position is right after a str.
 notAfterString :: Parser Bool
 notAfterString = do
-  pos <- getPosition
+  pos <- getSourcePos
   st <- lift (stateLastStrPos <$> TransState.get)
   return $ st /= Just pos
 
 isAfterString :: Parser Bool
 isAfterString = do
-  (==) <$> (Just <$> getPosition) <*> lift (stateLastStrPos <$> TransState.get)
+  (==) <$> (Just <$> getSourcePos) <*> lift (stateLastStrPos <$> TransState.get)
 
 isAfterDelimitedElement :: Parser Bool
 isAfterDelimitedElement = do
-  (==) <$> (Just <$> getPosition) <*> lift (stateLastDelimitedElementPos <$> TransState.get)
+  (==) <$> (Just <$> getSourcePos) <*> lift (stateLastDelimitedElementPos <$> TransState.get)
 
 
 --
@@ -174,8 +170,4 @@ withColumnCount p = do
   return (fromIntegral (endPos - startPos), res)
 
 colPos :: Parser Int
-#if MIN_VERSION_megaparsec(5,0,0)
-colPos = fromIntegral . unPos . sourceColumn <$> getPosition
-#else
-colPos = sourceColumn <$> getPosition
-#endif
+colPos = fromIntegral . unPos . sourceColumn <$> getSourcePos

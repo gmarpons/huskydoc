@@ -2,7 +2,7 @@
 # A snapshot resolver dictates the compiler version and the set of packages
 # to be used for project dependencies.
 #
-resolver: lts-7.3
+resolver: lts-13.11
 
 # User packages to be built.
 #

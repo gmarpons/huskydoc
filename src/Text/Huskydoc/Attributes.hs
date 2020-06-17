@@ -49,6 +49,7 @@ import Data.List ( find, partition )
 import Data.Text ( Text, pack, strip )
 import Text.Huskydoc.Parsing
 import Text.Huskydoc.Types
+import Text.Megaparsec.Char hiding ( spaceChar )
 
 attributes :: Parser Attributes
 attributes = fromRawAttributes <$> rawAttributes
@@ -130,7 +131,7 @@ positionalAttr = PositionalAttr . strip . pack <$> try (some (noneOf ("],"::Stri
 -- | Title of a block element
 blockTitle :: Parser RawAttr
 blockTitle = NamedAttr "title" . pack <$> try title
-  where title = char '.' *> notFollowedBy spaceChar *> someTill anyChar eol
+  where title = char '.' *> notFollowedBy spaceChar *> someTill anySingle eol
 
 blockId :: Parser RawAttr
 blockId = NamedAttr "id" . pack <$> try identifier

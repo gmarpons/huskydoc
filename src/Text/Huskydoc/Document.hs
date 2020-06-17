@@ -32,11 +32,13 @@ module Text.Huskydoc.Document
 
 import Control.Monad ( guard, void )
 import Data.Text ( Text, pack )
+import Data.Void
 import Text.Huskydoc.Blocks ( blocks, sectionTitle )
 import Text.Huskydoc.Parsing
 import Text.Huskydoc.Patterns
+import Text.Megaparsec.Char hiding ( spaceChar )
 
-readAsciidoc :: Text -> Either HuskydocError Document
+readAsciidoc :: Text -> Either (ParseErrorBundle Text Void) Document
 readAsciidoc input = parseDef document input
 
 -- | Parse a complete AsciiDoc document
@@ -78,7 +80,7 @@ documentAuthor = label "document author" . try $
 documentEmail :: Parser Text
 documentEmail = label "document email" . try $ do
   char '<'
-  pack <$> someTill anyChar (char '>') <* skipSpaces <* eol
+  pack <$> someTill anySingle (char '>') <* skipSpaces <* eol
 
 documentRevision :: Parser Text
 documentRevision = return mempty

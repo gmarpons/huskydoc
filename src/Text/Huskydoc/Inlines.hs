@@ -14,6 +14,7 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 -}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      :  Text.Huskydoc.Inlines
 Copyright   :  © 2016 Albert Krewinkel
@@ -52,13 +53,14 @@ module Text.Huskydoc.Inlines
 import Control.Monad ( guard, void )
 import Data.Char ( isSpace )
 import Data.Maybe ( fromMaybe )
-import Data.List ( (\\), intercalate )
+import Data.List ( (\\) )
 import Data.Monoid ( (<>) )
-import Data.Text (Text, pack, singleton )
+import Data.Text ( Text, intercalate, pack, singleton )
 import GHC.Exts ( IsList(..) )
 import Text.Huskydoc.Attributes
 import Text.Huskydoc.Parsing
 import Text.Huskydoc.Patterns
+import Text.Megaparsec.Char hiding ( spaceChar )
 
 -- | Parse one or more inline elements
 inlines :: Parser Inlines
@@ -157,7 +159,7 @@ monospacedPassThrough = label "monospaced pass-through" $
 monospacedUnconstrainedPassThrough :: Parser InlineElement
 monospacedUnconstrainedPassThrough = label "monospaced unconstrained" . try $
   let attribs = fromMaybe nullAttributes <$> optional attributes
-      txt = pack <$> (string "``" *> someTill anyChar (string "``"))
+      txt = pack <$> (string "``" *> someTill anySingle (string "``"))
   in RichMonospaced <$> attribs <*> (fromList . (:[]) . Str <$> txt)
 
 monospacedConstrainedPassThrough :: Parser InlineElement
@@ -196,7 +198,7 @@ subscript = unconstrainedQuotedText RichSubscript (char '~')
 quotedText :: (Attributes -> Inlines -> InlineElement)
            -> Char
            -> Parser InlineElement
-quotedText bldr c = (unconstrainedQuotedText bldr (try $ string [c,c])
+quotedText bldr c = (unconstrainedQuotedText bldr (try $ string $ pack [c,c])
                      <|> constrainedQuotedText bldr (char c))
                     <* markEndOfDelimitedElement
 
@@ -246,13 +248,13 @@ link = try $ Link <$> url <*> inlinesBetween (char '[') (char ']')
 url :: Parser Text
 url = try $ do
   schema <- (<>) <$> choice (map string schemas) <*> string "://"
-  let subdomain = try $ manyTill (alphaNumChar <|> oneOf ("-_"::String)) (char '.')
+  let subdomain = try $ pack <$> manyTill (alphaNumChar <|> oneOf ("-_" :: String)) (char '.')
   subdomains <- many subdomain
-  tld <- many letterChar
-  path <- many (notFollowedBy (spaceChar <|> char '[') *> anyChar)
-  return . pack $ schema <> intercalate "." (subdomains <> [tld]) <> path
+  tld <- pack <$> many letterChar
+  path <- pack <$> many (notFollowedBy (spaceChar <|> char '[') *> anySingle)
+  return $ schema <> intercalate "." (subdomains <> [tld]) <> path
 
-schemas :: [String]
+schemas :: [Text]
 schemas = ["https", "http", "ftp", "irc", "mailto"]
 
 -- | Parse a single special character.

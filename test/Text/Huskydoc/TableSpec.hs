@@ -31,9 +31,10 @@ module Text.Huskydoc.TableSpec
   , spec
   ) where
 
-import Text.Huskydoc.Parsing ( parseDef, char )
+import Text.Huskydoc.Parsing ( parseDef )
 import Text.Huskydoc.Patterns
 import Text.Huskydoc.Table
+import Text.Megaparsec.Char ( char )
 
 import Test.Hspec
 import Test.Hspec.Megaparsec
