@@ -54,7 +54,6 @@ import Control.Monad ( guard, void )
 import Data.Char ( isSpace )
 import Data.Maybe ( fromMaybe )
 import Data.List ( (\\) )
-import Data.Monoid ( (<>) )
 import Data.Text ( Text, intercalate, pack, singleton )
 import GHC.Exts ( IsList(..) )
 import Text.Huskydoc.Attributes

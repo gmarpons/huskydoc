@@ -46,7 +46,6 @@ module Text.Huskydoc.Blocks
 import Control.Monad ( guard, mzero, void, when )
 import Data.List ( findIndex )
 import Data.Maybe ( fromMaybe )
-import Data.Monoid ( (<>) )
 import Data.Text ( Text, pack )
 import GHC.Exts ( IsList(..) )
 import Text.Huskydoc.Attributes ( RawAttributes

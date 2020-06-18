@@ -51,7 +51,6 @@ module Text.Huskydoc.Types
 
 import           Data.Default ( Default(..) )
 import           Data.Foldable as Foldable
-import           Data.Monoid ( (<>) )
 import           Data.Sequence ( Seq )
 import qualified Data.Sequence as Seq
 import           Data.Text

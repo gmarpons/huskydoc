@@ -34,10 +34,11 @@ module Text.Huskydoc.Pandoc
   , convertInlines
   ) where
 
-import Prelude hiding ( foldr )
+import Prelude hiding ( concat, foldr )
 import Data.Foldable ( foldl', foldr )
-import Data.Monoid ((<>))
-import Data.Text ( Text, unpack )
+import Data.Function ( (&) )
+import Data.Functor ( (<&>) )
+import Data.Text ( Text, concat )
 import GHC.Exts ( IsList (..) )
 import Text.Huskydoc.Attributes ( attribValue )
 import Text.Huskydoc.Patterns
@@ -64,10 +65,10 @@ convertBlockElement = \case
                                           (convertAttributes attrs)
                                           lvl
                                           (convertInlines inlns)
-  (RichSource attrs srcLines)  -> let toText = unpack . (<> "\n") . fromSourceLine
+  (RichSource attrs srcLines)  -> let addEol = (<> "\n") . fromSourceLine
                                       attr = convertAttributes attrs
-                                  in Pandoc.codeBlockWith attr . concatMap toText $
-                                       srcLines
+                                  in srcLines <&> addEol & concat
+                                       & Pandoc.codeBlockWith attr
   (BulletList lst)         -> Pandoc.bulletList . map convertListItem $ lst
   (HorizontalRule)         -> Pandoc.horizontalRule
   (OrderedList lst)        -> Pandoc.orderedList . map convertListItem $ lst
@@ -98,17 +99,17 @@ convertInlineElement :: InlineElement -> Pandoc.Inlines
 convertInlineElement = \case
   (RichImage attrs src) -> Pandoc.imageWith
                              (convertAttributes attrs)
-                             (unpack src)
-                             (maybe mempty unpack $ attribValue attrs "title")
-                             (maybe mempty (Pandoc.str . unpack) $
+                             src
+                             (maybe mempty id $ attribValue attrs "title")
+                             (maybe mempty Pandoc.str $
                               attribValue attrs "alt")
   (Emphasis inlns)    -> Pandoc.emph . convertInlines $ inlns
   (HardBreak)         -> Pandoc.linebreak
-  (Link ref desc)     -> Pandoc.link (unpack ref) mempty (convertInlines desc)
-  (Monospaced inlns)  -> Pandoc.code . unpack . extractText $ inlns
+  (Link ref desc)     -> Pandoc.link ref mempty (convertInlines desc)
+  (Monospaced inlns)  -> Pandoc.code . extractText $ inlns
   (SoftBreak)         -> Pandoc.softbreak
   (Space)             -> Pandoc.space
-  (Str txt)           -> Pandoc.str . unpack $ txt
+  (Str txt)           -> Pandoc.str txt
   (Strong   inlns)    -> Pandoc.strong . convertInlines $ inlns
   (Subscript is)      -> Pandoc.subscript . convertInlines $ is
   (Superscript is)    -> Pandoc.superscript . convertInlines $ is
@@ -117,7 +118,7 @@ convertInlineElement = \case
 -- | Convert huskydoc attributes to pandoc attr
 convertAttributes :: Attributes -> Pandoc.Attr
 convertAttributes attributes =
-  let ident = maybe "" unpack $ attribValue attributes "id"
+  let ident = maybe "" id $ attribValue attributes "id"
       classes = []
   in (ident, classes, mempty)
 

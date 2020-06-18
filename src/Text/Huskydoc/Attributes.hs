@@ -44,7 +44,6 @@ module Text.Huskydoc.Attributes
   , toAttributes
   ) where
 
-import Data.Monoid ( (<>) )
 import Data.List ( find, partition )
 import Data.Text ( Text, pack, strip )
 import Text.Huskydoc.Parsing
